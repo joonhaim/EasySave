@@ -25,7 +25,7 @@ EasySave is a web-based app that aims to educate and assist students in creating
 7. Roadmap
 8. Support
 
-## Installation
+## Installation and Update
 To run this app locally:
 
 1. Clone the repository:
@@ -54,6 +54,8 @@ python main.py
 Open your browser and navigate to:
 http://127.0.0.1:5000/
 
+### Update
+[Update Guide](update.md)
 
 ## Usage
 
