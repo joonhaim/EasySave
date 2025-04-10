@@ -1,4 +1,4 @@
-# EasySave: Student Financial Planner
+# EasySave: AI-Powered Student Financial Planner
 
 
 ## Description
@@ -31,8 +31,8 @@ To run this app locally:
 1. Clone the repository:
 
 ```
-git clone https://git.liacs.nl/group_6_sd/my-awesome-project.git
-cd my-awesome-project
+git clone https://github.com/joonhaim/EasySave.git
+cd EasySave
 ```
 
 2. Install dependencies:
@@ -47,7 +47,7 @@ pip install -r requirements.txt
 
 Start the local server:
 ```
-python app.py
+python main.py
 ```
 
 4. Access the app:
