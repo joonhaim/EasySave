@@ -140,6 +140,3 @@ Future improvements to this project could include:
 - Support for multiple currencies
 - Advance analytics
 - Community features
-
-## Support
-For help, you can reach us by email at:
