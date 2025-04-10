@@ -1,0 +1,117 @@
+/* Define CSS Variables for Colors and Fonts */
+:root {
+    --primary-color: #0d6efd; /* Bootstrap's primary blue */
+    --secondary-color: #6c757d; /* Bootstrap's secondary gray */
+    --accent-color: #198754; /* Bootstrap's success green */
+    --background-color: #F3EDE6; /* Light gray background */
+    --sidebar-bg-color: #EFD8CC; /* Soft pink for sidebar background */
+    --sidebar-text-color: #333333; /* Dark text for sidebar */
+    --header-bg-color: #EFD8CC; /* Darker header for contrast */
+    --header-text-color: #ffffff; /* White text in header */
+    --footer-bg-color: #343a40; /* Matching footer to header */
+    --footer-text-color: #ffffff; /* White text in footer */
+    --card-bg-color: #ffffff; /* White cards */
+    --card-border-color: #dee2e6; /* Light border for cards */
+    --button-hover-color: #0b5ed7; /* Darker blue on hover */
+    --button-active-color: #0a58ca; /* Even darker on active */
+    --font-family: 'Arvo', Tahoma, Geneva, Verdana, sans-serif; /* Modern sans-serif font */
+}
+
+/* Apply Global Styles */
+body {
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 0;
+}
+
+/* Sidebar Styles */
+#sidebar {
+    background-color: var(--sidebar-bg-color);
+    min-height: 100vh;
+    padding: 20px;
+    border-top-right-radius: 30px;
+    border-bottom-right-radius: 30px;
+}
+
+#sidebar .nav-link {
+    color: var(--sidebar-text-color);
+    background-color: #F6F1F1;
+    font-weight: 500;
+    margin: 10px 0;
+    transition: color 0.3s, background-color 0.3s;
+    border-radius: 30px;
+    padding: 10px;
+}
+
+#sidebar .nav-link.active {
+    background-color: var(--primary-color);
+    color: #ffffff !important;
+}
+
+#sidebar .nav-link:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--primary-color) !important;
+}
+
+#sidebar .text-danger {
+    margin-top: auto;
+    background-color: transparent;
+    padding-left: 15px;
+    display: flex;
+    align-items: center;
+}
+#sidebar img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
+
+
+/* Main Content Styles */
+main {
+    padding: 30px;
+    background-color: var(--background-color);
+}
+
+.card {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--card-border-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Button Styles */
+button.btn {
+    font-weight: bold;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+button.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+button.btn-primary:hover {
+    background-color: var(--button-hover-color);
+    border-color: var(--button-hover-color);
+}
+
+button.btn-primary:active {
+    background-color: var(--button-active-color);
+    border-color: var(--button-active-color);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    #sidebar {
+        display: none;
+    }
+    header, footer {
+        text-align: center;
+    }
+    main {
+        padding: 15px;
+    }
+}

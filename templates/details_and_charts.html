@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Details and Charts{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+
+    <style>
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .block-3 {
+            width: 400px; 
+            margin-top: 20px;
+        }
+
+        #monthlyChart {
+            border: 1px solid #ccc;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+<script>
+    function updateSubcategories() {
+        const level1 = document.getElementById("category_level_1").value;
+        const level2 = document.getElementById("category_level_2");
+        level2.innerHTML = "";
+        level2.disabled = false;
+
+        let options = [];
+
+        if (level1 === "All Spending") {
+            options = [{ display: "All", value: "All" }];
+        } else if (level1 === "Disposable_income") {
+            options = [
+                { display: "Living Expense", value: "living_expense" },
+                { display: "Allowance", value: "allowance" },
+                { display: "Income", value: "income" }
+            ];
+        } else if (level1 === "Necessities") {
+            options = [
+                { display: "Tuition", value: "tuition" },
+                { display: "Housing", value: "housing" },
+                { display: "Food", value: "food" },
+                { display: "Transportation", value: "transportation" }
+            ];
+        } else if (level1 === "Flexible_spending") {
+            options = [
+                { display: "Study Materials", value: "study_materials" },
+                { display: "Entertainment", value: "entertainment" },
+                { display: "Technology", value: "technology" },
+                { display: "Personal Care", value: "personal_care" }
+            ];
+        } else if (level1 === "Others") {
+            options = [
+                { display: "Apparel", value: "apparel" },
+                { display: "Travel", value: "travel" },
+                { display: "Others", value: "others" }
+            ];
+        } else {
+            level2.disabled = true;
+            return;
+        }
+
+        options.forEach(option => {
+            const opt = document.createElement("option");
+            opt.value = option.value;
+            opt.textContent = option.display;
+            if (option.value === "{{ selected_category_level_2 }}") {
+                opt.selected = true;
+            }
+            level2.appendChild(opt);
+        });
+    }
+
+    window.onload = function() {
+        updateSubcategories();
+    };
+</script>
+
+<div class="container">
+    <form method="POST">
+        <div class="category-selection">
+            <label for="category_level_1">Category-Level-1:</label>
+            <select id="category_level_1" name="category_level_1" onchange="updateSubcategories()">
+                <option value="All Spending" {% if selected_category_level_1 == 'All Spending' %}selected{% endif %}>All Spending</option>
+                <option value="Necessities" {% if selected_category_level_1 == 'Necessities' %}selected{% endif %}>Necessities</option>
+                <option value="Flexible_spending" {% if selected_category_level_1 == 'Flexible_spending' %}selected{% endif %}>Flexible Spending</option>
+                <option value="Others" {% if selected_category_level_1 == 'Others' %}selected{% endif %}>Others</option>
+                <option value="Disposable_income" {% if selected_category_level_1 == 'Disposable_income' %}selected{% endif %}>Disposable Income</option>
+            </select>
+    
+            <label for="category_level_2">Subcategory-Level-2:</label>
+            <select id="category_level_2" name="category_level_2">
+            </select>
+        </div>
+    
+        <button type="submit" style="
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px 20px;
+            color: white;
+            background-color: rgba(75, 192, 192, 0.6);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;">
+            Filter
+        </button>
+    </form>
+
+    <div class="block block-1 spending-summary">
+        <h3>Spending Records</h3>
+        <div class="spending-records" id="spending-records" style="overflow-y: auto; max-height: 250px;">
+            {% if records %}
+                {% for record in records %}
+                    <div class="record">
+                        <p>Amount: {{ record.amount }}, Category: {{ record.category }}, Date: {{ record.date.strftime('%Y-%m-%d') }}</p>
+                        {% if record.note %}
+                            <button onclick="showNote('{{ record.note }}')" class="btn btn-secondary">Show Note</button>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No records to display.</p>
+            {% endif %}
+        </div>
+    </div>
+
+
+    <div class="block block-3">
+        <h3>Monthly Spending Chart</h3>
+        <canvas id="monthlyChart" width="300" height="250"></canvas>
+    </div>
+
+    <script>
+        function showNote(note) {
+            alert(note);
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="text/javascript">
+        
+        const monthlyData = JSON.parse('{{ monthly_data_json | safe }}');
+
+        // Monthly Spending Chart
+        const ctx2 = document.getElementById('monthlyChart').getContext('2d');
+        const monthlyChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: monthlyData.labels,
+                datasets: [{
+                    label: 'Total Spending',
+                    data: monthlyData.values,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Month' } },
+                    y: { title: { display: true, text: 'Spending Amount' } }
+                }
+            }
+        });
+    </script>
+</div>
+{% endblock %}

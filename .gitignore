@@ -1,0 +1,63 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Instance folder (local database and config)
+instance/
+*.db
+*.sqlite3
+
+# Environment variables and secret keys
+.env
+
+# MacOS system files
+.DS_Store
+
+# Virtual environment
+venv/
+env/
+
+# VS Code settings
+.vscode/
+
+# PyCharm
+.idea/
+
+# Logs and debug files
+*.log
+
+# Jupyter notebooks (if used in the future)
+*.ipynb
+
+# Testing / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+coverage.xml
+.cache
+pytest_cache/
+nosetests.xml
+test_*.py
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Static build output (if any generated dynamically)
+staticfiles/
+
+# Statsmodels archive
+statsmodels-main.zip
+statsmodels-main/
+
+# Ignore all files in the profile_pictures folder
+static/profile_pictures/*
+
+# But keep the default profile picture
+!static/profile_pictures/default_picture.png
