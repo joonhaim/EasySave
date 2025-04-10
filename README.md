@@ -47,7 +47,7 @@ pip install -r requirements.txt
 
 Start the local server:
 ```
-python app.py
+python main.py
 ```
 
 4. Access the app:
