@@ -10,7 +10,7 @@ import numpy as np
 import json
 from sqlalchemy import func
 from import_database import initialize_database
-from user_profile import get_user, handle_user_profile_update
+from app.user_profile import get_user, handle_user_profile_update
 from flask_migrate import Migrate
 from app.algorithms.budget_allocation_algorithm import fetch_combined_financial_data, allocate_budget, \
     generate_insights
