@@ -1,4 +1,4 @@
-# EasySave: AI-powered Student Financial Planner
+# EasySave: AI-Powered Student Financial Planner
 
 
 ## Description
