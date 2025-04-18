@@ -2,7 +2,8 @@
 
 
 ## Description
-![logo](https://github.com/user-attachments/assets/792b105e-affd-48a9-b580-77e8285ecae1)
+<img src="https://github.com/user-attachments/assets/792b105e-affd-48a9-b580-77e8285ecae1" width="200" alt="logo" />
+
 
 
 EasySave is a web-based app that aims to educate and assist students in creating personalized savings plans by analyzing their past spending behavior and providing actionable insights. The software will give personalized recommendations on saving, compare users' spending to peers, and offer a daily spending limit in order to allow users to reach their savings goals.
