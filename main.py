@@ -29,20 +29,21 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 migrate = Migrate(app, db)
 
-with app.app_context():
-    # Check db file exists or not
-    if not os.path.exists(os.path.join('instance', 'data.db')):
-        # create the db file and import database
-        db.create_all()
-        initialize_database()
-        print("Database and data initialized.")
-    else:
-        # Check the table exists or not
-        if not Detail.query.first():
+if not os.environ.get("FLASK_SKIP_INIT"):
+    with app.app_context():
+        # Check db file exists or not
+        if not os.path.exists(os.path.join('instance', 'data.db')):
+            # create the db file and import database
+            db.create_all()
             initialize_database()
-            print("Data imported into existing database.")
+            print("Database and data initialized.")
         else:
-            print("Database already initialized, no need to import CSV.")
+            # Check the table exists or not
+            if not Detail.query.first():
+                initialize_database()
+                print("Data imported into existing database.")
+            else:
+                print("Database already initialized, no need to import CSV.")
 
 
 @app.route('/data')

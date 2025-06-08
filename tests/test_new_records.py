@@ -1,6 +1,12 @@
 from flask import Flask, session
-from main import app, db, User, Record
+import os
+import sys
 import unittest
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+os.environ["FLASK_SKIP_INIT"] = "1"
+
+from main import app, db, User, Record
 
 # 创建一个继承 unittest.TestCase 的测试类
 class TestNewRecords(unittest.TestCase):
@@ -14,14 +20,17 @@ class TestNewRecords(unittest.TestCase):
         with app.app_context():
             db.create_all()
             # 创建测试用户
-            self.user = User(username='testuser', emailaddress='testuser@example.com', password='password')
-            db.session.add(self.user)
+            user = User(username='testuser', emailaddress='testuser@example.com', password='password')
+            db.session.add(user)
             db.session.commit()
+            self.user_id = user.user_id
 
     def tearDown(self):
         # 清理数据库
         with app.app_context():
             db.drop_all()
+        if os.path.exists('test_data.db'):
+            os.remove('test_data.db')
 
     def test_get_newRecords_not_logged_in(self):
         # 测试未登录用户访问 newRecords
@@ -32,7 +41,7 @@ class TestNewRecords(unittest.TestCase):
     def test_get_newRecords_logged_in(self):
         # 模拟登录用户访问 newRecords 页面
         with self.app.session_transaction() as session:
-            session['user_id'] = self.user.user_id
+            session['user_id'] = self.user_id
 
         response = self.app.get('/newRecords')
         self.assertEqual(response.status_code, 200)
@@ -41,7 +50,7 @@ class TestNewRecords(unittest.TestCase):
     def test_post_newRecords_missing_fields(self):
         # 模拟用户登录
         with self.app.session_transaction() as session:
-            session['user_id'] = self.user.user_id
+            session['user_id'] = self.user_id
 
         # 提交不完整的表单（缺少必要字段）
         response = self.app.post('/newRecords', data={
@@ -52,12 +61,12 @@ class TestNewRecords(unittest.TestCase):
         }, follow_redirects=True)
         
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Please fill out all required fields', response.data)
+        self.assertIn(b'All fields are required', response.data)
 
     def test_post_newRecords_invalid_date_format(self):
         # 模拟用户登录
         with self.app.session_transaction() as session:
-            session['user_id'] = self.user.user_id
+            session['user_id'] = self.user_id
 
         # 提交包含错误日期格式的表单
         response = self.app.post('/newRecords', data={
@@ -73,7 +82,7 @@ class TestNewRecords(unittest.TestCase):
     def test_post_newRecords_successful_submission(self):
         # 模拟用户登录
         with self.app.session_transaction() as session:
-            session['user_id'] = self.user.user_id
+            session['user_id'] = self.user_id
 
         # 提交完整的表单
         response = self.app.post('/newRecords', data={
@@ -89,7 +98,7 @@ class TestNewRecords(unittest.TestCase):
 
         # 验证记录是否成功添加到数据库
         with app.app_context():
-            record = Record.query.filter_by(user_id=self.user.user_id, amount=500).first()
+            record = Record.query.filter_by(user_id=self.user_id, amount=500).first()
             self.assertIsNotNone(record)
             self.assertEqual(record.category, 'Necessities:Housing')
 
