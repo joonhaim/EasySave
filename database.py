@@ -2,7 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, Float, String, Date
 
 
-db = SQLAlchemy()
+# Avoid attribute expiration after session commits to simplify testing
+db = SQLAlchemy(session_options={"expire_on_commit": False})
 
 class User(db.Model):
     __tablename__ = 'user'

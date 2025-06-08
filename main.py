@@ -26,23 +26,18 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__fil
 # Database connection
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_EXPIRE_ON_COMMIT'] = False
 db.init_app(app)
 migrate = Migrate(app, db)
 
 with app.app_context():
-    # Check db file exists or not
-    if not os.path.exists(os.path.join('instance', 'data.db')):
-        # create the db file and import database
-        db.create_all()
+    # Always ensure tables are created for the configured database
+    db.create_all()
+
+    # Import initial data only if the Detail table is empty
+    if not Detail.query.first():
         initialize_database()
         print("Database and data initialized.")
-    else:
-        # Check the table exists or not
-        if not Detail.query.first():
-            initialize_database()
-            print("Data imported into existing database.")
-        else:
-            print("Database already initialized, no need to import CSV.")
 
 
 @app.route('/data')
@@ -215,7 +210,7 @@ def newRecords():
         note = request.form.get('note')
 
         if not amount or not category_level_1 or not category_level_2 or not date:
-            return render_template('newRecords.html', user=user, error="All fields are required"), 200
+            return render_template('newRecords.html', user=user, error="Please fill out all required fields"), 200
 
         try:
             amount_value = float(amount)
@@ -247,91 +242,138 @@ def newRecords():
     return render_template('newRecords.html', active_page='newRecords', user=user)
 
 
-def generate_and_forecast_spending_data(start_date, end_date, forecast_days=30):
-    """
-    Generate mock spending data and perform ARIMA forecasting for each category.
-
-    Args:
-        start_date (str): Start date for the data generation (e.g., '2023-01-01').
-        end_date (str): End date for the data generation (e.g., '2023-12-31').
-        forecast_days (int): Number of days to forecast. Defaults to 30.
-
-    Returns:
-        dict: Forecast results for each category.
-    """
-    # Suppress warnings for convergence issues
+def generate_and_forecast_spending_data(user_id, forecast_days=30):
+    """Generate spending forecasts for a user using ARIMA models."""
     warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
-    # Generate mock user spending data
-    np.random.seed(42)
-    months = pd.date_range(start=start_date, end=end_date, freq='M')
-    data = {
-        'datum': months,
-        'Living_expense': np.random.randint(500, 1200, len(months)),
-        'Allowance': np.random.randint(100, 300, len(months)),
-        'Income': np.random.randint(800, 1500, len(months)),
-        'Tuition': np.random.randint(2000, 4000, len(months)),
-        'Housing': np.random.randint(400, 900, len(months)),
-        'Food': np.random.randint(300, 800, len(months)),
-        'Transportation': np.random.randint(50, 200, len(months)),
-        'Study_material': np.random.randint(50, 300, len(months)),
-        'Entertainment': np.random.randint(20, 150, len(months)),
-        'Personal_care': np.random.randint(20, 100, len(months)),
-        'Technology': np.random.randint(50, 300, len(months)),
-        'Travel': np.random.randint(50, 400, len(months)),
-        'Others': np.random.randint(20, 200, len(months))
+    detail_records = Detail.query.filter_by(user_id=user_id).order_by(Detail.date).all()
+    record_entries = Record.query.filter_by(user_id=user_id).all()
+
+    if not detail_records and not record_entries:
+        return {}
+
+    # Mapping of database fields / record categories to dataframe columns
+    attr_map = {
+        'living_expense': 'Living_expense',
+        'allowance': 'Allowance',
+        'income': 'Income',
+        'tuition': 'Tuition',
+        'housing': 'Housing',
+        'food': 'Food',
+        'transportation': 'Transportation',
+        'study_materials': 'Study_material',
+        'entertainment': 'Entertainment',
+        'personal_care': 'Personal_care',
+        'technology': 'Technology',
+        'apparel': 'Apparel',
+        'travel': 'Travel',
+        'others': 'Others'
     }
-    df = pd.DataFrame(data)
+    columns = list(attr_map.values())
+
+    rows = []
+    for d in detail_records:
+        row = {'datum': d.date}
+        for attr, col in attr_map.items():
+            row[col] = getattr(d, attr) or 0.0
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+
+    # Include individual records grouped by month
+    rec_map = {
+        'living_expenses': 'Living_expense',
+        'allowance': 'Allowance',
+        'income': 'Income',
+        'tuition': 'Tuition',
+        'housing': 'Housing',
+        'food': 'Food',
+        'transportation': 'Transportation',
+        'study_materials': 'Study_material',
+        'entertainment': 'Entertainment',
+        'personal_care': 'Personal_care',
+        'technology': 'Technology',
+        'apparel': 'Apparel',
+        'travel': 'Travel',
+        'others': 'Others'
+    }
+
+    rec_rows = []
+    for r in record_entries:
+        if not r.category:
+            continue
+        parts = r.category.split(':')
+        subcat = parts[1] if len(parts) == 2 else parts[0]
+        col = rec_map.get(subcat)
+        if col:
+            rec_rows.append({'datum': r.date, col: float(r.amount) if r.amount else 0.0})
+
+    if rec_rows:
+        df_rec = pd.DataFrame(rec_rows)
+        df_rec['datum'] = pd.to_datetime(df_rec['datum']).dt.to_period('M').dt.to_timestamp()
+        df_rec = df_rec.groupby('datum').sum().reset_index()
+    else:
+        df_rec = pd.DataFrame()
+
+    if not df.empty:
+        df['datum'] = pd.to_datetime(df['datum']).dt.to_period('M').dt.to_timestamp()
+        df = df.groupby('datum').sum().reset_index()
+
+    if not df_rec.empty:
+        if df.empty:
+            df = df_rec
+        else:
+            df = pd.merge(df, df_rec, on='datum', how='outer').fillna(0)
+            df[columns] = df.groupby('datum')[columns].sum()
+
+    if df.empty:
+        return {}
+
+    df.set_index('datum', inplace=True)
+
     columns_to_sum = [
         'Living_expense', 'Allowance', 'Housing', 'Food', 'Transportation',
         'Study_material', 'Entertainment', 'Personal_care', 'Technology',
-        'Travel', 'Others'
+        'Apparel', 'Travel', 'Others'
     ]
     existing_columns = [col for col in columns_to_sum if col in df.columns]
     df['Total_spending'] = df[existing_columns].sum(axis=1)
 
-    # Set time index
-    df['datum'] = pd.to_datetime(df['datum'])
-    df.set_index('datum', inplace=True)
-
-    # Forecast results dictionary
     forecast_results = {}
-
-    # Perform ARIMA forecasting for each category
     for column in df.columns:
-        if column != 'Total_spending':
-            data_series = df[column]
+        if column == 'Total_spending':
+            continue
 
-            # Clean and preprocess data
-            if data_series.isna().any():
-                data_series = data_series.fillna(0)
-            if not np.isfinite(data_series).all():
-                data_series = data_series.replace([np.inf, -np.inf], 0)
+        data_series = df[column]
+        if data_series.isna().any():
+            data_series = data_series.fillna(0)
+        if not np.isfinite(data_series).all():
+            data_series = data_series.replace([np.inf, -np.inf], 0)
 
-            # Check for stationarity
-            if adfuller(data_series)[1] > 0.05:
-                data_series = data_series.diff().dropna()
+        if len(data_series) > 1 and adfuller(data_series)[1] > 0.05:
+            data_series = data_series.diff().dropna()
 
-            # Build ARIMA model with error handling
-            try:
-                model = ARIMA(data_series, order=(2, 1, 2))
-                model_fit = model.fit()
-            except np.linalg.LinAlgError:
-                model = ARIMA(data_series, order=(1, 1, 1))
-                model_fit = model.fit()
+        try:
+            model = ARIMA(data_series, order=(2, 1, 2))
+            model_fit = model.fit()
+        except np.linalg.LinAlgError:
+            model = ARIMA(data_series, order=(1, 1, 1))
+            model_fit = model.fit()
 
-            # Forecast future data
-            forecast = model_fit.get_forecast(steps=forecast_days)
-            forecast_mean = forecast.predicted_mean.clip(lower=0)  # Ensure no negative values
-            forecast_results[column] = forecast_mean
+        forecast = model_fit.get_forecast(steps=forecast_days)
+        forecast_mean = forecast.predicted_mean.clip(lower=0)
+        forecast_results[column] = forecast_mean
 
     return forecast_results
 
 
 @app.route('/predict', methods=['GET'])
 def predict():
-    # Call the function to generate predictions
-    forecast_results = generate_and_forecast_spending_data(start_date='2023-01-01', end_date='2023-12-31')
+    # Retrieve current user id for personalised predictions
+    user_id = session.get('user_id')
+
+    # Call the function to generate predictions based on user data
+    forecast_results = generate_and_forecast_spending_data(user_id)
 
     # Calculate average prediction for the next month
     predictions = {category: values.mean() for category, values in forecast_results.items()}
